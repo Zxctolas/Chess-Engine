@@ -21,7 +21,8 @@ class ChessEngine
       piece = @board[from_pos[0]][from_pos[1]]
       
       # Проверка валидности хода
-      #*Здесь проверка*
+      validation = validate_move(piece, from_pos, to_pos)
+      return validation unless validation[:success]
       
       # Выполнение хода
       execute_move(piece, from_pos, to_pos, move[:promotion])
@@ -136,9 +137,106 @@ class ChessEngine
   end
 
 
+  # Проверка валидности хода
+  def validate_move(piece, from_pos, to_pos)
+    # 1. Проверка, что клетка не пустая
+    return { success: false, message: "Нет фигуры на начальной позиции" } unless piece
+    
+    # 2. Проверка, что ход делает текущий игрок
+    return { success: false, message: "Сейчас ход #{@current_player}" } unless piece[:color] == @current_player
+    
+    # 3. Проверка, что целевая клетка либо пустая, либо содержит фигуру противника
+    target_piece = @board[to_pos[0]][to_pos[1]]
+    if target_piece && target_piece[:color] == @current_player
+      return { success: false, message: "Нельзя бить свои фигуры" }
+    end
+    
+    # 4. Проверка правил движения для конкретной фигуры (упрощенная версия)
+    unless valid_piece_move?(piece, from_pos, to_pos)
+      return { success: false, message: "Недопустимый ход для #{piece[:type]}" }
+    end
+    
+    # 5. Проверка на шах (упрощенная)
+    # Здесь должна быть сложная логика проверки шаха
+    
+    { success: true }
+  end
 
-  
+  # Проверка правил движения для фигуры (упрощенная)
+  def valid_piece_move?(piece, from_pos, to_pos)
+    row_from, col_from = from_pos
+    row_to, col_to = to_pos
+    delta_row = (row_to - row_from).abs
+    delta_col = (col_to - col_from).abs
+    
+    case piece[:type]
+    when :pawn
+      # Пешки двигаются по-разному в зависимости от цвета
+      direction = piece[:color] == :white ? -1 : 1
+      start_row = piece[:color] == :white ? 6 : 1
+      
+      # Простое движение вперед
+      if col_from == col_to
+        # На одну клетку
+        return true if row_to == row_from + direction && !@board[row_to][col_to]
+        # На две клетки с начальной позиции
+        return true if row_from == start_row && row_to == row_from + 2*direction && 
+                      !@board[row_from + direction][col_to] && !@board[row_to][col_to]
+      # Взятие
+      elsif delta_col == 1 && delta_row == 1 && @board[row_to][col_to]
+        return true
+      end
+      
+    when :rook
+      # Ладья двигается по прямой
+      (row_from == row_to || col_from == col_to) && path_clear?(from_pos, to_pos)
+      
+    when :knight
+      # Конь ходит буквой Г
+      (delta_row == 2 && delta_col == 1) || (delta_row == 1 && delta_col == 2)
+      
+    when :bishop
+      # Слон двигается по диагонали
+      delta_row == delta_col && path_clear?(from_pos, to_pos)
+      
+    when :queen
+      # Ферзь сочетает ладью и слона
+      (row_from == row_to || col_from == col_to || delta_row == delta_col) && 
+        path_clear?(from_pos, to_pos)
+      
+    when :king
+      # Король на одну клетку в любом направлении
+      delta_row <= 1 && delta_col <= 1
+    else
+      false
+    end
+  end
 
+  # Проверка, что путь между клетками свободен
+  def path_clear?(from_pos, to_pos)
+    row_from, col_from = from_pos
+    row_to, col_to = to_pos
+    
+    if row_from == row_to # Горизонтальное движение
+      range = col_from < col_to ? (col_from+1...col_to) : (col_to+1...col_from)
+      range.each { |col| return false if @board[row_from][col] }
+    elsif col_from == col_to # Вертикальное движение
+      range = row_from < row_to ? (row_from+1...row_to) : (row_to+1...row_from)
+      range.each { |row| return false if @board[row][col_from] }
+    else # Диагональное движение
+      row_step = row_to > row_from ? 1 : -1
+      col_step = col_to > col_from ? 1 : -1
+      row, col = row_from + row_step, col_from + col_step
+      
+      while row != row_to && col != col_to
+        return false if @board[row][col]
+        row += row_step
+        col += col_step
+      end
+    end
+    
+    true
+  end
 
   # Выполнение хода
   def execute_move(piece, from_pos, to_pos, promotion = nil)
