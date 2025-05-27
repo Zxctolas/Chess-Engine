@@ -26,6 +26,12 @@
 Создать партию - создать экземпляр класса ChessEngine
 
 res = ChessEngine.make_move(NOTATION) - воспроизводит этот ход, если возможно.
+NOTATION принимается в виде FROM-TO (т.е. классическая шахматная нотация)
+
+	e2-e4 - ok
+	f2-f4 - ok
+	f3 - ne ok
+        
 в result[:success] лежит true или false - возможен ход или нет соответственно.
 
 ChessEngine.print_board - выводит доску в консоль. пример - 
