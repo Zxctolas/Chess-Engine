@@ -1,7 +1,7 @@
 class ChessEngine
   def initialize
     @board = create_initial_board
-    @current_player = :white
+    @current_player = :white #але валер ты расист?
     @move_history = []
     @captured_pieces = { white: [], black: [] }
     @game_state = :in_progress
@@ -42,7 +42,6 @@ class ChessEngine
     puts "\nТекущая доска:"
     @board.each_with_index do |row, i|
       row_number = 8 - i
-      # Исправлено: добавлены скобки для тернарного оператора
       cells = row.map { |p| p ? "#{p[:type].to_s[0].upcase}#{p[:color] == :white ? 'w' : 'b'}" : '__' }
       puts "#{row_number} #{cells.join(' ')}"
     end
@@ -84,29 +83,23 @@ class ChessEngine
     # 8x8 board, [row][col], начало с a1 в левом нижнем углу
     board = Array.new(8) { Array.new(8) }
     
-    # Расставляем пешки
     8.times do |col|
       board[1][col] = { type: :pawn, color: :black }
       board[6][col] = { type: :pawn, color: :white }
     end
     
-    # Расставляем ладьи
     board[0][0] = board[0][7] = { type: :rook, color: :black }
     board[7][0] = board[7][7] = { type: :rook, color: :white }
     
-    # Расставляем коней
     board[0][1] = board[0][6] = { type: :Night, color: :black }
     board[7][1] = board[7][6] = { type: :Night, color: :white }
     
-    # Расставляем слонов
     board[0][2] = board[0][5] = { type: :bishop, color: :black }
     board[7][2] = board[7][5] = { type: :bishop, color: :white }
     
-    # Расставляем ферзей
     board[0][3] = { type: :queen, color: :black }
     board[7][3] = { type: :queen, color: :white }
     
-    # Расставляем королей
     board[0][4] = { type: :king, color: :black }
     board[7][4] = { type: :king, color: :white }
     
@@ -168,6 +161,7 @@ end
     { success: true }
   end
 
+
   def valid_piece_move?(piece, from_pos, to_pos, board = @board)
     row_from, col_from = from_pos
     row_to, col_to = to_pos
@@ -181,16 +175,13 @@ end
       target = board[row_to][col_to]
       
       if col_from == col_to
-        # На одну клетку
         return false unless target.nil?
         return true if row_to == row_from + direction
         
-        # На две клетки
         if row_from == start_row && row_to == row_from + 2*direction
           return board[row_from + direction][col_to].nil? && target.nil?
         end
       else
-        # Взятие
         return false unless delta_col == 1 && delta_row == 1
         return !target.nil? || en_passant_possible?(from_pos, to_pos, board)
       end
@@ -279,7 +270,6 @@ end
     row_from, col_from = from_pos
     row_to, col_to = to_pos
     
-    # Запись хода в историю
     move_record = {
       player: @current_player,
       from: coords_to_chess(from_pos),
@@ -288,24 +278,19 @@ end
       captured: @board[row_to][col_to]
     }
     
-    # Взятие фигуры
     if @board[row_to][col_to]
       @captured_pieces[@current_player] << @board[row_to][col_to]
     end
     
-    # Превращение пешки
     if piece[:type] == :pawn && (row_to == 0 || row_to == 7)
       piece = { type: promotion || :queen, color: piece[:color] }
     end
     
-    # Обновление доски
     @board[row_to][col_to] = piece
     @board[row_from][col_from] = nil
     
-    # Запись хода
     @move_history << move_record
     
-    # Смена игрока
     @current_player = @current_player == :white ? :black : :white
   end
 
@@ -327,7 +312,6 @@ engine = ChessEngine.new
 
 
 
-# Делаем ход белых
 engine.print_board
 result = engine.make_move("e2-e4")
 puts result[:success] ? "Ход выполнен" : "Ошибка: #{result[:message]}"
